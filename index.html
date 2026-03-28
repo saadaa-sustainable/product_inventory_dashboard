@@ -241,6 +241,38 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);disp
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px;}
+
+/* OVERVIEW PAGE */
+.ov-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px;}
+.ov-hero-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;}
+.ov-hero-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.ov-hero-card.total::before{background:linear-gradient(90deg,var(--acc),var(--traf));}
+.ov-hero-card.instk::before{background:var(--in);}
+.ov-hero-card.lowstk::before{background:var(--low);}
+.ov-hero-card.outstk::before{background:var(--out);}
+.ov-hero-label{font-family:'DM Mono',monospace;font-size:.54rem;color:var(--mu2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;}
+.ov-hero-val{font-family:'Fraunces',serif;font-size:2rem;letter-spacing:-.02em;line-height:1;margin-bottom:3px;}
+.ov-hero-sub{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--mu2);}
+.ov-tbl{width:100%;border-collapse:collapse;}
+.ov-tbl th{font-family:'DM Mono',monospace;font-size:.52rem;color:var(--mu2);text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:7px 10px;border-bottom:1px solid var(--bd);font-weight:400;background:var(--sf);position:sticky;top:0;z-index:2;cursor:pointer;user-select:none;white-space:nowrap;}
+.ov-tbl th:hover{color:var(--txt);}
+.ov-tbl th.asc::after{content:' ↑';}
+.ov-tbl th.desc::after{content:' ↓';}
+.ov-tbl td{padding:7px 10px;border-bottom:1px solid var(--bd);font-size:.71rem;vertical-align:middle;}
+.ov-tbl tr:last-child td{border-bottom:none;}
+.ov-tbl tr:hover td{background:var(--sf2);}
+.ov-pname{font-weight:500;font-size:.72rem;line-height:1.25;}
+.ov-plink{font-family:'DM Mono',monospace;font-size:.55rem;color:var(--acc);text-decoration:none;opacity:.7;}
+.ov-plink:hover{opacity:1;}
+.ov-pill{font-family:'DM Mono',monospace;font-size:.5rem;padding:2px 7px;border-radius:20px;white-space:nowrap;}
+.ov-in{background:var(--in-bg);color:var(--in);border:1px solid var(--in-bd);}
+.ov-low{background:var(--low-bg);color:var(--low);border:1px solid var(--low-bd);}
+.ov-out{background:var(--out-bg);color:var(--out);border:1px solid var(--out-bd);}
+.ov-unk{background:var(--sf2);color:var(--mu2);border:1px solid var(--bd2);}
+.ov-act{background:var(--acq-bg);color:var(--acq);border:1px solid var(--acq-bd);}
+.ov-dft{background:rgba(129,140,248,.1);color:var(--draft);border:1px solid rgba(129,140,248,.25);}
+.ov-num{font-family:'DM Mono',monospace;font-size:.67rem;}
+.ov-tbl-scroll{overflow-x:auto;max-height:420px;overflow-y:auto;}
 </style>
 </head>
 <body>
@@ -249,18 +281,68 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);disp
 <div class="nav">
   <div class="brand">सादा <em>/ Ops</em></div>
   <div class="nav-tabs">
-    <button class="ntab on" id="nt-ads"  onclick="goPage('ads')">🎯 Ad Intelligence <span class="nbadge" id="pauseBadge">—</span></button>
-    <button class="ntab"    id="nt-inv"  onclick="goPage('inv')">📦 Inventory</button>
-    <button class="ntab"    id="nt-traf" onclick="goPage('traf')">📈 Traffic</button>
+    <button class="ntab on" id="nt-overview" onclick="goPage('overview')">&#127968; Overview</button>
+    <button class="ntab"    id="nt-inv"      onclick="goPage('inv')">&#128230; Inventory</button>
+    <button class="ntab"    id="nt-traf"     onclick="goPage('traf')">&#128200; Traffic</button>
+    <button class="ntab"    id="nt-ads"      onclick="goPage('ads')">&#127919; Ad Intelligence <span class="nbadge" id="pauseBadge">&mdash;</span></button>
   </div>
   <div class="nav-r">
     <div class="pip" id="livePip"></div>
-    <div class="nav-meta" id="navMeta">25 March 2026 · 481 products</div>
+    <div class="nav-meta" id="navMeta">28 March 2026 &middot; 481 products</div>
+  </div>
+</div>
+
+<!-- ===== OVERVIEW PAGE ===== -->
+<div class="page on" id="page-overview">
+  <div class="scroll" id="overviewScroll">
+    <div class="ov-hero" id="ovKpis"></div>
+    <div class="crow c3" style="margin-bottom:16px;">
+      <div class="ch"><div class="cht">Stock Status Breakdown</div><div class="chw h160"><canvas id="ovDonut"></canvas></div></div>
+      <div class="ch"><div class="cht">Top 10 by Visitors</div><div class="chw h160"><canvas id="ovVisBar"></canvas></div></div>
+      <div class="ch"><div class="cht">Visitors by Stock Status</div><div class="chw h160"><canvas id="ovStockVis"></canvas></div></div>
+    </div>
+    <div class="tblwrap" style="margin-bottom:14px;">
+      <div class="tblhdr">
+        <span class="tbltitle">Product Overview</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="srch" id="ovSrch" placeholder="Search products&hellip;" oninput="renderOvTable()" style="width:170px;"/>
+          <select class="sel" id="ovStatusF" onchange="renderOvTable()">
+            <option value="all">All Status</option>
+            <option value="in_stock">In Stock</option>
+            <option value="low_stock">Low Stock</option>
+            <option value="out_of_stock">Out of Stock</option>
+            <option value="unknown">Unknown</option>
+          </select>
+          <select class="sel" id="ovSort" onchange="renderOvTable()">
+            <option value="visitors">Visitors &darr;</option>
+            <option value="sessions">Sessions &darr;</option>
+            <option value="cartAdds">Cart Adds &darr;</option>
+            <option value="totalStock">Stock &darr;</option>
+          </select>
+        </div>
+      </div>
+      <div class="ov-tbl-scroll">
+        <table class="ov-tbl" id="ovTable">
+          <thead>
+            <tr>
+              <th onclick="sortOvBy('name')" id="ovth-name">Product</th>
+              <th onclick="sortOvBy('stockStatus')" id="ovth-stock">Stock Status</th>
+              <th onclick="sortOvBy('productStatus')" id="ovth-pstatus">Active/Draft</th>
+              <th onclick="sortOvBy('totalStock')" id="ovth-units">Total Units</th>
+              <th onclick="sortOvBy('visitors')" id="ovth-vis" class="desc">Visitors</th>
+              <th onclick="sortOvBy('sessions')" id="ovth-ses">Sessions</th>
+              <th onclick="sortOvBy('cartAdds')" id="ovth-cart">Cart Adds</th>
+            </tr>
+          </thead>
+          <tbody id="ovTbody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- ===== AD INTELLIGENCE PAGE ===== -->
-<div class="page on" id="page-ads">
+<div class="page" id="page-ads">
   <div class="alert-bar" id="alertBar">
     <span class="abtxt" id="alertTxt"></span>
     <div class="ab-chips" id="alertChips"></div>
@@ -970,9 +1052,116 @@ function buildRows(rows){
   }).filter(r=>r.visitors>0||r.cartAdds>0);
 }
 
+// ============ NAVIGATION ============
+function goPage(p){
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('nt-'+p).classList.add('on');
+  document.querySelectorAll('.page').forEach(b=>b.classList.remove('on'));
+  document.getElementById('page-'+p).classList.add('on');
+}
+
+// ============ OVERVIEW PAGE ============
+const OV_SS={in_stock:{l:'In Stock',cls:'ov-in'},low_stock:{l:'Low Stock',cls:'ov-low'},out_of_stock:{l:'Out of Stock',cls:'ov-out'},unknown:{l:'Unknown',cls:'ov-unk'}};
+let ovSortCol='visitors',ovSortDir=-1;
+
+function renderOverview(){
+  const inP=DATA.filter(r=>r.stockStatus==='in_stock').length;
+  const lowP=DATA.filter(r=>r.stockStatus==='low_stock').length;
+  const outP=DATA.filter(r=>r.stockStatus==='out_of_stock').length;
+  let totalSizeSlots=0,inSizeSlots=0,lowSizeSlots=0,outSizeSlots=0;
+  DATA.forEach(r=>{
+    if(!r.hasInvData)return;
+    Object.values(r.sizes||{}).forEach(v=>{
+      if(v===null||v===undefined)return;
+      totalSizeSlots++;
+      if(v===0)outSizeSlots++;
+      else if(v<=LOW)lowSizeSlots++;
+      else inSizeSlots++;
+    });
+  });
+  document.getElementById('ovKpis').innerHTML=
+    ovKpiCard('total','Total Products','#c8f04d',DATA.length,totalSizeSlots+' size-level SKUs tracked')
+    +ovKpiCard('instk','In Stock','var(--in)',inP,inSizeSlots+' size slots in stock')
+    +ovKpiCard('lowstk','Low Stock','var(--low)',lowP,lowSizeSlots+' size slots low')
+    +ovKpiCard('outstk','Out of Stock','var(--out)',outP,outSizeSlots+' size slots empty');
+
+  // Donut
+  ch('ovDonut','doughnut',{
+    labels:['In Stock','Low Stock','Out of Stock','Unknown'],
+    datasets:[{data:[inP,lowP,outP,DATA.length-inP-lowP-outP],backgroundColor:['rgba(46,245,176,.75)','rgba(245,183,49,.75)','rgba(255,68,68,.75)','rgba(68,85,102,.5)'],borderWidth:0}]
+  },{plugins:{legend:{labels:{color:'#7a90aa',font:{family:'DM Mono',size:9},boxWidth:10},position:'right'}},cutout:'65%'});
+
+  // Top 10 visitors bar
+  const top10=[...DATA].sort((a,b)=>(b.visitors||0)-(a.visitors||0)).slice(0,10);
+  ch('ovVisBar','bar',{
+    labels:top10.map(r=>r.name.split(' ').slice(0,3).join(' ')),
+    datasets:[{label:'Visitors',data:top10.map(r=>r.visitors||0),backgroundColor:'rgba(77,166,255,.6)',barThickness:14}]
+  },{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2835'},ticks:{color:'#445566',font:{family:'DM Mono',size:7}}},y:{grid:{color:'#1e2835'},ticks:{color:'#7a90aa',font:{family:'DM Mono',size:7}}}}});
+
+  // Visitors by stock status
+  const sg={in_stock:0,low_stock:0,out_of_stock:0,unknown:0};
+  DATA.forEach(r=>{if(r.stockStatus in sg)sg[r.stockStatus]+=(r.visitors||0);});
+  ch('ovStockVis','bar',{
+    labels:['In Stock','Low Stock','Out of Stock','Unknown'],
+    datasets:[{label:'Visitors',data:[sg.in_stock,sg.low_stock,sg.out_of_stock,sg.unknown],backgroundColor:['rgba(46,245,176,.6)','rgba(245,183,49,.6)','rgba(255,68,68,.6)','rgba(68,85,102,.5)'],barThickness:22}]
+  },{plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2835'},ticks:{color:'#7a90aa',font:{family:'DM Mono',size:8}}},y:{grid:{color:'#1e2835'},ticks:{color:'#445566',font:{family:'DM Mono',size:8}},beginAtZero:true}}});
+
+  renderOvTable();
+}
+
+function ovKpiCard(cls,label,color,val,sub){
+  return '<div class="ov-hero-card '+cls+'">'
+    +'<div class="ov-hero-label">'+label+'</div>'
+    +'<div class="ov-hero-val" style="color:'+color+'">'+val+'</div>'
+    +'<div class="ov-hero-sub">'+sub+'</div>'
+    +'</div>';
+}
+
+function renderOvTable(){
+  const q=(document.getElementById('ovSrch').value||'').toLowerCase();
+  const sf=document.getElementById('ovStatusF').value;
+  const so=document.getElementById('ovSort').value;
+  let rows=[...DATA];
+  if(q)rows=rows.filter(r=>(r.name||'').toLowerCase().includes(q)||(r.colorSku||'').toLowerCase().includes(q));
+  if(sf!=='all')rows=rows.filter(r=>r.stockStatus===sf);
+  rows.sort((a,b)=>{
+    const av=a[ovSortCol]??-1,bv=b[ovSortCol]??-1;
+    if(typeof av==='string')return ovSortDir*(av.localeCompare(bv));
+    return ovSortDir*(bv-av);
+  });
+  const ss=OV_SS;
+  let html=rows.map(r=>{
+    const st=ss[r.stockStatus]||ss.unknown;
+    const ps=(r.productStatus||'').toUpperCase();
+    const psLabel=ps==='ACTIVE'?'<span class="ov-pill ov-act">Active</span>'
+      :ps==='DRAFT'?'<span class="ov-pill ov-dft">Draft</span>'
+      :'<span class="ov-pill ov-unk">'+(ps||'&mdash;')+'</span>';
+    return '<tr onclick="openDetail(DATA.find(x=>x.slug===\''+r.slug+'\')||DATA[0])" style="cursor:pointer;">'
+      +'<td><div class="ov-pname">'+r.name+'</div>'+(r.path?'<a class="ov-plink" href="https://saadaa-design.myshopify.com'+r.path+'" target="_blank" onclick="event.stopPropagation()">'+r.path+'</a>':'')+'</td>'
+      +'<td><span class="ov-pill '+st.cls+'">'+st.l+'</span></td>'
+      +'<td>'+psLabel+'</td>'
+      +'<td class="ov-num">'+(r.totalStock>=0?r.totalStock.toLocaleString():'&mdash;')+'</td>'
+      +'<td class="ov-num" style="color:var(--traf)">'+(r.visitors||0).toLocaleString()+'</td>'
+      +'<td class="ov-num">'+(r.sessions||0).toLocaleString()+'</td>'
+      +'<td class="ov-num" style="color:var(--cart)">'+(r.cartAdds||0)+'</td>'
+      +'</tr>';
+  }).join('');
+  document.getElementById('ovTbody').innerHTML=html||'<tr><td colspan="7" class="empty">No products match filter</td></tr>';
+}
+
+function sortOvBy(col){
+  const map={name:'name',stockStatus:'stock',productStatus:'pstatus',totalStock:'units',visitors:'vis',sessions:'ses',cartAdds:'cart'};
+  document.querySelectorAll('.ov-tbl th').forEach(th=>th.classList.remove('asc','desc'));
+  if(ovSortCol===col)ovSortDir*=-1;else{ovSortCol=col;ovSortDir=-1;}
+  const th=document.getElementById('ovth-'+(map[col]||col));
+  if(th)th.classList.add(ovSortDir===-1?'desc':'asc');
+  renderOvTable();
+}
+
 // ============ INIT ============
 document.getElementById('invSid').value='1gCqWlABFBw14Bwp509TSad97yYQKlRPPXHnO38oVGX8';
 try{const c=JSON.parse(localStorage.getItem('ops_cfg')||'{}');if(c.apiKey)document.getElementById('invKey').value=c.apiKey;}catch(e){}
+renderOverview();
 renderAds();
 renderInv();
 renderTraf();
